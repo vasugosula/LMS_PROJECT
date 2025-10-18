@@ -55,7 +55,8 @@ export function CourseDetail({ courseId, courseName, onBack }: CourseDetailProps
   const [showAssignmentModal, setShowAssignmentModal] = useState(false);
   const [showSubmissionModal, setShowSubmissionModal] = useState<string | null>(null);
   const [showGradingModal, setShowGradingModal] = useState<Submission | null>(null);
-  const [activeTab, setActiveTab] = useState<'assignments' | 'submissions' | 'leaderboard' | 'chat'>('assignments');
+  const [activeTab, setActiveTab] = useState<'assignments' | 'submissions' | 'leaderboard' | 'chat' | 'people'>('assignments');
+  const [classmates, setClassmates] = useState<Array<{ id: string; name: string; role: string }>>([]);
 
   const isTeacher = profile?.role === 'teacher';
 
@@ -69,8 +70,43 @@ export function CourseDetail({ courseId, courseName, onBack }: CourseDetailProps
       await loadSubmissionsForTeacher();
     } else {
       await loadAssignmentsForStudent();
+      await loadClassmates();
     }
     setLoading(false);
+  };
+
+  const loadClassmates = async () => {
+    try {
+      // Get enrolled student ids
+      const { data: enrollments, error: enrollmentsError } = await supabase
+        .from('enrollments')
+        .select('student_id')
+        .eq('course_id', courseId);
+
+      if (enrollmentsError) throw enrollmentsError;
+
+      const ids = (enrollments || [])
+        .map((e: any) => e.student_id)
+        .filter((id: string) => id && id !== user?.id);
+
+      if (ids.length === 0) {
+        setClassmates([]);
+        return;
+      }
+
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, name, role')
+        .in('id', ids);
+
+      if (profilesError) throw profilesError;
+
+      setClassmates(
+        (profilesData || []).map((p: any) => ({ id: p.id, name: p.name, role: p.role }))
+      );
+    } catch (error) {
+      console.error('Error loading classmates:', error);
+    }
   };
 
   const loadAssignmentsForStudent = async () => {
@@ -211,7 +247,7 @@ export function CourseDetail({ courseId, courseName, onBack }: CourseDetailProps
         </div>
 
         <div className="flex space-x-4 mb-6 border-b border-gray-200 dark:border-gray-700">
-          {['assignments', 'submissions', 'leaderboard', 'chat'].map((tab) => (
+          {['assignments', 'submissions', 'leaderboard', 'chat', 'people'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab as any)}
@@ -347,6 +383,34 @@ export function CourseDetail({ courseId, courseName, onBack }: CourseDetailProps
 
         {activeTab === 'chat' && (
           <CourseChat courseId={courseId} />
+        )}
+
+        {activeTab === 'people' && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
+            <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4">Classmates</h3>
+            {classmates.length === 0 ? (
+              <p className="text-gray-600 dark:text-gray-400">No classmates yet. Enrollments will appear here.</p>
+            ) : (
+              <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+                {classmates.map((m) => (
+                  <li key={m.id} className="py-3 flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-gray-800 dark:text-white">{m.name}</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 capitalize">{m.role}</p>
+                    </div>
+                    <div className="space-x-2">
+                      <button className="px-3 py-1 text-sm bg-gray-100 dark:bg-gray-700 rounded-lg text-gray-800 dark:text-gray-200">
+                        View Profile
+                      </button>
+                      <button className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                        Message
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         )}
       </div>
 

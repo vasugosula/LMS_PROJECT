@@ -21,8 +21,9 @@ export function Header({ onHomeClick }: HeaderProps) {
             <button
               onClick={onHomeClick}
               className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
+              aria-label="Learning Hub Home"
             >
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center animate-pulse">
                 <span className="text-white font-bold text-xl">L</span>
               </div>
               <div>
