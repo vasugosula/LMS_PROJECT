@@ -1,3 +1,11 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+/* Hide the "Made in Bolt" footer or badge */
+a[href*="bolt.host"],
+a[href*="bolt.new"],
+a[href*="Made in Bolt"],
+.bolt-badge {
+  display: none !important;
+  visibility: hidden !important;
+}
